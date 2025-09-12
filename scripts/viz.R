@@ -5,6 +5,8 @@ pacman::p_load(
   , tigris
   , rnaturalearth
   , elevatr
+  , ggnewscale
+  , ggpubr
   #, 
   #, 
 )
@@ -12,37 +14,49 @@ pacman::p_load(
 region <- read_rds("data/region.rds")
 dem <- read_rds("data/dem.rds")
 
-dem <- get_elev_raster(
-  data.frame(x = c(-130, -100), y = c(28, 51)),
-  prj = st_crs(region), 
-  z = 7) %>%
-  crop(region) %>%
-  mask(region) %>%
-  as.data.frame(xy = T) 
-names(dem) <- c("x", "y", "elev")
+pija_ebd <- read_rds("data/ebd/pija_ebd.rds")
+pija_imbcr <- read_rds("data/bcr/pija_imbcr.rds")
+pija_bbs <- read_rds("data/bbs/pija_bbs_strat.rds")
 
-pija_ebd <- pija %>%
-  st_as_sf(
-    coords = c("longitude", "latitude"),
-    crs = 4326) %>%
-  st_transform(st_crs(region))
+# cols <- c(
+#   "eBird" = "#f04546"
+#   , "IMBCR" = "#3591d1"
+#   , "BBS" = "#62c76b"
+#   # , "bbs" = "#62c76b"
+# )
 
-pija_imbcr <- imbcr %>%
-  filter(en_common_name == "Pinyon Jay")  %>%
-  st_transform(st_crs(region))
-
-cols <- c("ebd" = "#f04546", "imbcr" = "#3591d1","bbs" = "#62c76b")
-
-ggplot() +
-  geom_raster(data = dem, aes(x = x, y = y, fill = elev)) +
+base_map <- ggplot() +
+  geom_raster(
+    data = dem_df,
+    aes(x, y, fill = elev),
+    guide = "none") +
+  scale_fill_hypso_tint_c() +
   geom_sf(data = region, fill = NA) +
-  geom_sf(data = pija_ebd, shape = "+", aes(col = "ebd")) +
-  geom_sf(data = pija_imbcr, shape = "+", aes(col = "imbcr")) +
-  scale_colour_manual("data", values = cols) +
-  scale_fill_gradient(low = "grey40", high = "white", na.value = NA) +
   theme_void() +
   theme(
     legend.position = "inside",
     legend.position.inside = c(0.05, 0.25))
-ggsave("figures/pija_ebd_imbcr.jpeg", dpi = 600)
 
+gg_data_3panel <- ggarrange(
+  # eBird data
+  base_map + 
+    geom_sf(data = pija_ebd, shape = "+", col = "#3590d1ff"),
+  # IMBCR data
+  base_map + 
+    geom_sf(data = pija_imbcr, shape = "+", col = "#3590d1ff"),
+  # BBS data
+  base_map + 
+    geom_sf(data = pija_bbs, aes(alpha = count), col = NA, fill = "#3590d1ff") +
+    scale_alpha_continuous(
+      "counts",
+      range = c(0.25, 1), 
+      na.value = NA), 
+  ncol = 3, 
+  nrow = 1
+)
+
+ggsave(
+  "figures/pija_ebd_imbcr_bbs_3panel.jpeg", 
+  height = 4, 
+  width = 12, 
+  dpi = 600)
