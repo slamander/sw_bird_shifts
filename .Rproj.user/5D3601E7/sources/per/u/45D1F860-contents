@@ -1,0 +1,8 @@
+
+pacman::p_load(
+  tidyverse
+  , sf
+  , rnaturalearth
+)
+
+ebird <- read_table("data/eBird/")

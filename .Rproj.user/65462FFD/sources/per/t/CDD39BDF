@@ -1,0 +1,28 @@
+{
+    "id": "CDD39BDF",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1754075324787.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "id": "3b868e71faa143e2a518bad034f72155",
+        "name": "region_strata",
+        "title": "region_strata",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 45599667792248,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1754075324787,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,60 @@
+
+pacman::p_load(
+  tidyverse
+  , sf
+  , janitor
+  , tigris
+  , rnaturalearth
+  , wesanderson
+  , bbsBayes
+
+  # , 
+  # ,
+)
+
+### setting spatial polygon for study area
+region <- rbind(
+  ne_states(country = "United States of America") %>%
+    filter(region %in% c(
+      "West", "Midwest", "West", "South")) %>%
+    filter(!name %in% c(
+      "Hawaii"
+    )),
+  ne_states(country = "Canada") %>%
+    filter(name %in% c(
+      "British Columbia",
+      "Alberta",
+      "Saskatchewan",
+      "Manitoba")),
+  ne_states(country = "Mexico") %>%
+    filter(name %in% c(
+      "Baja California", 
+      "Sonora", 
+      "Chihuahua", 
+      "Coahuila", 
+      "Nuevo León", 
+      "Tamaulipas", 
+      "Baja California Sur",
+      "Sinaloa", 
+      "Durango", 
+      "Zacatecas", 
+      "San Luis Potosí"))) %>%
+  st_union() %>%
+  st_crop(xmin = -139.06021, 
+          ymin = 24, 
+          xmax = -95, 
+          ymax = 49)
+
+region_strata <- region %>%
+  st_make_grid(., cellsize = c(0.5, 0.5), 
+               what = "polygons", 
+               square = TRUE) %>%
+  st_intersection(region)
+
+ggplot() +
+  geom_sf(data = region_strata) +
+  theme_void()
+
+ggplot() +
+  geom_sf(data = region) +
+  theme_void()
