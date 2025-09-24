@@ -77,13 +77,38 @@ write_rds(bird_key, "data/species/bird_key.rds")
 # 3) load proposal species list
 ########################################################################################
 
-prop_prelim <- read_csv("data/species_lists/proposal_primary_prelim_sp.csv") %>%
-  mutate(proposal_focal = T)
-prop_second <- read_csv("data/species_lists/proposal_secondary_prelim_sp.csv") %>%
-  mutate(proposal_second = T)
+prop_prelim <- read_csv("data/species/proposal_primary_prelim_sp.csv") %>%
+  left_join(bird_key) %>%
+  mutate(
+    proposal_focal = T,
+    alpha = tolower(alpha)) %>%
+  select(order, genus, species, 
+    binomial, en_common_name,
+    alpha, intersect_area_pcnt, proposal_focal) %>%
+  distinct(en_common_name, .keep_all = T) %>% 
+  arrange(en_common_name)
+write_rds(prop_prelim, "data/species/prop_prelim.rds")
+
+prop_second <- read_csv("data/species/proposal_secondary_prelim_sp.csv") %>%
+  left_join(bird_key) %>%
+  mutate(
+    proposal_second = T,
+    alpha = tolower(alpha)) %>%
+  select(order, genus, species, 
+    binomial, en_common_name,
+    alpha, intersect_area_pcnt, 
+    proposal_second) %>%
+  distinct(en_common_name, .keep_all = T) %>% 
+  arrange(en_common_name)
+write_rds(prop_second, "data/species/prop_second.rds")
 
 prop_species <- left_join(prop_second,  prop_prelim) %>%
-  select(en_common_name, proposal_focal, proposal_second)
+  select(order, genus, species, 
+    binomial, en_common_name,
+    alpha, intersect_area_pcnt, 
+    proposal_focal, proposal_second) %>% 
+  arrange(en_common_name)
+write_rds(prop_species, "data/species/prop_species.rds")
 
 ########################################################################################
 
@@ -124,7 +149,7 @@ imbcr_species <- read_csv("data/IMBCR/sw_birds.csv") %>%
 sum(is.na(imbcr_species$aou))/nrow(imbcr_species)
 sum(is.na(imbcr_species$alpha))/nrow(imbcr_species)
 
-bbs_species <- read_csv("data/species_lists/species_codes.csv") %>%
+bbs_species <- read_csv("data/species/species_codes.csv") %>%
   mutate(binomial = paste(genus, species, sep = " ")) %>%
   left_join(bird_key) %>%
   select(aou, alpha, en_common_name, 

@@ -7,50 +7,55 @@ pacman::p_load(
   # , 
 )
 
-fetch_bbs_data()
+# fetch_bbs_data()
 
-strat <- bbsBayes::load_map("latlong") %>%
-  st_transform(st_crs(region)) %>%
-  rename(strat_name = ST_12)
+crs <- read_rds("data/region/crs.rds")
+strat <- read_rds("data/region/strat.rds")
 
-# sf_use_s2(TRUE)
+# bbs_strat <- bbsBayes::stratify(by = "latlong")
+write_rds(bbs_strat, "data/bbs/bbs_strat.rds")
 
-strat_region <- strat %>%
-  st_intersection(st_union(region))
+species <- read_rds("data/species/prop_prelim.rds")
 
-bbs_strat <- bbsBayes::stratify(
-  by = "latlong")
+for(i in 1:nrow(species)){
+  
+  tryCatch({
+    # I guess this needs to be within the loop
+    # bbs_strat <- bbsBayes::stratify(by = "latlong")
+    bbs_strat <- read_rds(data/bbs/bbs_strat.rds) # preload it instead??
 
-pija_bbs_raw <- bbsBayes::prepare_data(
-  bbs_strat,
-  species_to_run = "Pinyon Jay",
-  model = "gam")
+    # gather bbs point data
+    bbs_raw <- bbsBayes::prepare_data(
+      bbs_strat,
+      species_to_run = paste0(species$en_common_name[i]),
+      model = "slope")
+    
+    # clean it up
+    bbs_df <- data.frame(
+      count = bbs_raw$count,
+      strat_name = bbs_raw$strat_name, 
+      strat = bbs_raw$strat_name,
+      obser = bbs_raw$obser,
+      firstyr = bbs_raw$firstyr, 
+      route = bbs_raw$route, 
+      year = bbs_raw$r_year, 
+      month = bbs_raw$month, 
+      day = bbs_raw$day
+    ); write_rds(bbs_df, paste0("data/bbs/species/point/", species$alpha[i], ".rds"))
+    
+    # stratify
+    bbs_strat <- bbs_df %>%
+      group_by(strat_name, year) %>%
+      summarize(count = sum(count, na.rm = T)) %>%
+      left_join(strat) %>%
+      st_set_geometry("geometry")
+    write_rds(bbs_strat, paste0("data/bbs/species/strat/", species$alpha[i], ".rds"))
 
-pija_bbs_raw <- data.frame(
-  count = pija_bbs_raw$count,
-  strat_name = pija_bbs_raw$strat_name, 
-  strat = pija_bbs_raw$strat_name,
-  obser = pija_bbs_raw$obser, 
-  firstyr = pija_bbs_raw$firstyr, 
-  route = pija_bbs_raw$route, 
-  year = pija_bbs_raw$year, 
-  month = pija_bbs_raw$month, 
-  day = pija_bbs_raw$day
-)
-
-pija_bbs_strat <- pija_bbs_raw %>% 
-  group_by(strat_name) %>%
-  summarize(count = sum(count, na.rm = T)) %>%
-  left_join(strat_region) %>%
-  st_set_geometry("geometry")
-
-pija_strat_bbs <- strat_region %>%
-  left_join(
-    pija_bbs_raw %>% 
-      group_by(strat_name) %>%
-      summarize(count = sum(count, na.rm = T))
-  )
-
-write_rds(pija_bbs_strat, "data/bbs/pija_bbs_strat.rds")
-write_rds(pija_strat_bbs, "data/bbs/pija_strat_bbs.rds")
-
+  }, error = function(e){
+    # Baby, what's wrong?
+    cat(paste("Error at species", species$en_common_name[i], ":", conditionMessage(e), "\n"))
+     # Moving on...
+    next
+  })
+    cat(paste("All done with species: ", species$en_common_name[i]))
+}
